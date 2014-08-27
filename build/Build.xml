@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="Build Rodin Client" basedir="../" default="createJcalendarJar">
+    <property name="javaVersion" value="1.6"/>
+    <property name="rodinVersion" value="7.05"/>
+	<property name="baseBldDir" value="c:/RodinBuild/Rodin${rodinVersion}"/>
+	<property name="bldDir" value="${baseBldDir}/rodinj"/>
+	<property name="classpathDir" value="${baseBldDir}/Jars"/>
+    <property name="jarDir" value="${bldDir}"/>
+    <property name="jcalendarSrc" value="${jarDir}/jcalendar.rodinj.src.zip"/>
+    <property name="jcalendarJar" value="${jarDir}/jcalendar.rodinj.jar"/>
+	<property name="jarFile" value="${jarDir}/rodinj.jar"/>
+    <property name="classesDir" value="${bldDir}/classes"/>
+    <property name="codeDir" value="${bldDir}/code"/>
+	<property name="classPath" value="${classpathDir}/rt.jar;${classpathDir}/rodinh.jar;${classpathDir}/jt400.jar;${classpathDir}/jhall.jar;${classpathDir}/dom4j-1.6.1.jar;${classpathDir}/poi.jar;${classpathDir}/poi-ooxml.jar;${classpathDir}/poi-ooxml-schemas.jar;${classpathDir}/xbean.jar"/>
+    <property name="manifestDir" value="${classesDir}/META-INF"/>
+    <property name="manifestFile" value="${manifestDir}/MANIFEST.MF"/>
+
+	<property name="srcDir" value="${basedir}"/>
+	
+	<target name="clean" description="Clean up the build directory ${bldDir}">
+        <delete dir="${bldDir}"/>
+		<mkdir dir="${bldDir}"/>
+		<mkdir dir="${classesDir}"/>
+		<mkdir dir="${codeDir}"/>
+		<mkdir dir="${manifestDir}"/>
+	</target>
+
+    <target name="compileUtf8" description="Compile all Java code in UTF8" depends="clean">
+        <javac compiler="javac${javaVersion}" srcdir="${srcDir}" destdir="${classesDir}" classpath="${classPath}" target="${javaVersion}"/>
+    </target>
+
+    <target name="compileUtf16" description="Compile all Java code in UTF16" depends="compileUtf8">
+		<copy todir="${codeDir}">
+    		<fileset dir="${srcDir}">
+    	      	<include name="**/*.unicode"/>
+    	    </fileset>
+    	</copy>
+		<move file="${codeDir}/cm/rodin/locales/LabelsBundleA_ja.unicode" tofile="${codeDir}/cm/rodin/locales/LabelsBundleA_ja.java"/>
+		<move file="${codeDir}/cm/rodin/locales/LabelsBundleB_ja.unicode" tofile="${codeDir}/cm/rodin/locales/LabelsBundleB_ja.java"/>
+    	<javac compiler="javac${javaVersion}" srcdir="${codeDir}" destdir="${classesDir}" classpath="${classPath}" target="${javaVersion}" encoding="UTF_16"/>
+    </target>
+
+    <target name="copyFiles" description="Copy required files" depends="compileUtf16">
+    	 <copy todir="${classesDir}">
+    	    <fileset dir="${srcDir}" includes="cm/**/*.dtd cm/**/*.properties cm/**/*.gif cm/**/*.jpg cm/**/*.png com/**/*.gif com/**/*.properties"/>
+    	  </copy>
+    </target>
+
+	<target name="createManifest" description="Create the Manifest with latest build number" depends="copyFiles">
+        <java classname="cm.rodin.Build" classpath="${classesDir}" failonerror="true">
+			<arg value="${manifestFile}"/>
+        </java>
+    </target>
+
+    <target name="createJar" description="JARs the classes" depends="createManifest">
+        <zip destfile="${jarFile}" basedir="${classesDir}" excludes="com/**/*" filesonly="true"/>
+    </target>
+
+    <target name="createJcalendarSrc" description="zips the jcalendar source" depends="createJar">
+        <zip destfile="${jcalendarSrc}" basedir="${srcDir}" includes="com/**/*.java com/**/*.properties com/**/*.gif " filesonly="true"/>
+    </target>
+
+    <target name="createJcalendarJar" description="zips the jcalendar classes" depends="createJcalendarSrc">
+        <zip destfile="${jcalendarJar}" basedir="${classesDir}" includes="com/**/*" filesonly="true"/>
+    </target>
+
+</project>
